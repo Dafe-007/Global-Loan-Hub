@@ -14,6 +14,11 @@ export interface Loan {
   country: string;
   phoneNumber: string;
   monthlyIncomeRange: string;
+  dateOfBirth?: string;
+  occupation?: string;
+  employerName?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
   amount: number;
   duration: number;
   status: LoanStatus;

@@ -241,6 +241,16 @@ components:
           type: string
         monthlyIncomeRange:
           type: string
+        dateOfBirth:
+          type: string
+        occupation:
+          type: string
+        employerName:
+          type: string
+        bankName:
+          type: string
+        bankAccountNumber:
+          type: string
         amount:
           type: number
         duration:
@@ -283,6 +293,16 @@ components:
         phoneNumber:
           type: string
         monthlyIncomeRange:
+          type: string
+        dateOfBirth:
+          type: string
+        occupation:
+          type: string
+        employerName:
+          type: string
+        bankName:
+          type: string
+        bankAccountNumber:
           type: string
         amount:
           type: number
@@ -335,6 +355,16 @@ components:
         phoneNumber:
           type: string
         monthlyIncomeRange:
+          type: string
+        dateOfBirth:
+          type: string
+        occupation:
+          type: string
+        employerName:
+          type: string
+        bankName:
+          type: string
+        bankAccountNumber:
           type: string
         amount:
           type: number

@@ -72,7 +72,7 @@ export default function Dashboard() {
                 <StatusBadge status={loan.status} />
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                {loan.monthlyPayment && (
+                {loan.monthlyPayment != null && !isNaN(Number(loan.monthlyPayment)) && (
                   <div>
                     <p className="text-xs text-muted-foreground">Monthly payment</p>
                     <p className="font-semibold">${Number(loan.monthlyPayment).toFixed(2)}</p>

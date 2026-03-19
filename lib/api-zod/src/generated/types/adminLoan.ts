@@ -16,6 +16,11 @@ export interface AdminLoan {
   country: string;
   phoneNumber: string;
   monthlyIncomeRange: string;
+  dateOfBirth?: string;
+  occupation?: string;
+  employerName?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
   amount: number;
   duration: number;
   status: AdminLoanStatus;

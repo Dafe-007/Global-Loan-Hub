@@ -1,4 +1,4 @@
-import { pgTable, text, serial, numeric, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -9,6 +9,11 @@ export const loansTable = pgTable("loans", {
   country: text("country").notNull(),
   phoneNumber: text("phone_number").notNull(),
   monthlyIncomeRange: text("monthly_income_range").notNull(),
+  dateOfBirth: text("date_of_birth"),
+  occupation: text("occupation"),
+  employerName: text("employer_name"),
+  bankName: text("bank_name"),
+  bankAccountNumber: text("bank_account_number"),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   duration: integer("duration").notNull(),
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),

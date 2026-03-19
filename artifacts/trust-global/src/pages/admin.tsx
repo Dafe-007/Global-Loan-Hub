@@ -117,6 +117,11 @@ export default function AdminPage() {
                   <div><span className="text-muted-foreground text-xs">Duration: </span><span>{loan.duration} months</span></div>
                   <div><span className="text-muted-foreground text-xs">Country: </span><span>{loan.country}</span></div>
                   <div><span className="text-muted-foreground text-xs">Income: </span><span>{loan.monthlyIncomeRange}</span></div>
+                  {loan.occupation && <div><span className="text-muted-foreground text-xs">Occupation: </span><span>{loan.occupation}</span></div>}
+                  {loan.employerName && <div><span className="text-muted-foreground text-xs">Employer: </span><span>{loan.employerName}</span></div>}
+                  {loan.bankName && <div><span className="text-muted-foreground text-xs">Bank: </span><span>{loan.bankName}</span></div>}
+                  {loan.bankAccountNumber && <div><span className="text-muted-foreground text-xs">Account: </span><span className="font-mono">****{loan.bankAccountNumber.slice(-4)}</span></div>}
+                  {loan.dateOfBirth && <div><span className="text-muted-foreground text-xs">DOB: </span><span>{loan.dateOfBirth}</span></div>}
                   <div><span className="text-muted-foreground text-xs">Applied: </span><span>{fmtDate(loan.createdAt)}</span></div>
                 </div>
                 {loan.status === "pending" && (

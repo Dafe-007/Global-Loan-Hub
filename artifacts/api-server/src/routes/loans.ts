@@ -10,6 +10,11 @@ const loanApplicationSchema = z.object({
   country: z.string().min(2),
   phoneNumber: z.string().min(5),
   monthlyIncomeRange: z.string(),
+  dateOfBirth: z.string().optional(),
+  occupation: z.string().optional(),
+  employerName: z.string().optional(),
+  bankName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
   amount: z.number().min(500).max(50000),
   duration: z.number().int().min(3).max(36),
 });
@@ -59,10 +64,15 @@ router.post("/loans", async (req, res) => {
   }
   const parsed = loanApplicationSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Invalid input", details: parsed.error.issues });
     return;
   }
-  const { fullName, country, phoneNumber, monthlyIncomeRange, amount, duration } = parsed.data;
+  const {
+    fullName, country, phoneNumber, monthlyIncomeRange,
+    dateOfBirth, occupation, employerName, bankName, bankAccountNumber,
+    amount, duration,
+  } = parsed.data;
+
   const status = autoDecide(monthlyIncomeRange, amount);
   const repaymentDate = calcRepaymentDate(duration);
   const monthlyPayment = calcMonthlyPayment(amount, duration);
@@ -73,6 +83,11 @@ router.post("/loans", async (req, res) => {
     country,
     phoneNumber,
     monthlyIncomeRange,
+    dateOfBirth: dateOfBirth ?? null,
+    occupation: occupation ?? null,
+    employerName: employerName ?? null,
+    bankName: bankName ?? null,
+    bankAccountNumber: bankAccountNumber ?? null,
     amount: amount.toString(),
     duration,
     status,
