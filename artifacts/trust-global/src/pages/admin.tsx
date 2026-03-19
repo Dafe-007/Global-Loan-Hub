@@ -5,255 +5,170 @@ import { useAdminGetAllLoans, useAdminUpdateLoanStatus, useAdminGetAllUsers, get
 import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, CheckCircle, XCircle, Users, CreditCard, DollarSign, Activity } from "lucide-react";
-import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
+
+function fmtDate(d: string | undefined) {
+  if (!d) return "–";
+  try { return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }); }
+  catch { return d; }
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const cls =
+    status === "approved" ? "bg-green-100 text-green-800" :
+    status === "rejected" ? "bg-red-100 text-red-800" :
+    "bg-yellow-100 text-yellow-800";
+  return <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${cls}`}>{status}</span>;
+}
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("loans");
+  const [tab, setTab] = useState<"loans"|"users">("loans");
 
-  const { data: loans, isLoading: isLoansLoading } = useAdminGetAllLoans({ query: { enabled: isAuthenticated && user?.isAdmin } });
-  const { data: users, isLoading: isUsersLoading } = useAdminGetAllUsers({ query: { enabled: isAuthenticated && user?.isAdmin && activeTab === "users" } });
-  const updateStatusMutation = useAdminUpdateLoanStatus();
+  const { data: loans, isLoading: loansLoading } = useAdminGetAllLoans({ query: { enabled: isAuthenticated && !!user?.isAdmin } });
+  const { data: users, isLoading: usersLoading } = useAdminGetAllUsers({ query: { enabled: isAuthenticated && !!user?.isAdmin && tab === "users" } });
+  const updateMutation = useAdminUpdateLoanStatus();
 
   useEffect(() => {
     if (!isAuthLoading) {
-      if (!isAuthenticated) {
-        setLocation("/login");
-      } else if (!user?.isAdmin) {
-        setLocation("/dashboard");
-      }
+      if (!isAuthenticated) setLocation("/login");
+      else if (!user?.isAdmin) setLocation("/dashboard");
     }
   }, [isAuthLoading, isAuthenticated, user, setLocation]);
 
   if (isAuthLoading || !isAuthenticated || !user?.isAdmin) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
 
-  const handleStatusUpdate = (loanId: number, status: "approved" | "rejected") => {
-    updateStatusMutation.mutate(
+  function handleUpdate(loanId: number, status: "approved" | "rejected") {
+    updateMutation.mutate(
       { loanId, data: { status } },
       {
         onSuccess: () => {
-          toast({ title: `Loan ${status} successfully` });
+          toast({ title: `Loan ${status}` });
           queryClient.invalidateQueries({ queryKey: getAdminGetAllLoansQueryKey() });
         },
-        onError: (error) => {
-          toast({ variant: "destructive", title: "Action failed", description: error.error || "An error occurred" });
-        }
+        onError: () => toast({ variant: "destructive", title: "Action failed" }),
       }
     );
-  };
+  }
 
-  // Stats
-  const totalLoans = loans?.length || 0;
-  const pendingLoans = loans?.filter(l => l.status === 'pending').length || 0;
-  const totalDisbursed = loans?.filter(l => l.status === 'approved').reduce((sum, l) => sum + l.amount, 0) || 0;
+  const total    = loans?.length ?? 0;
+  const pending  = loans?.filter(l => l.status === "pending").length ?? 0;
+  const approved = loans?.filter(l => l.status === "approved").length ?? 0;
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-primary">Admin Control Panel</h1>
-        <p className="text-muted-foreground mt-1">Manage platform applications and users</p>
+    <div className="mx-auto px-4 py-8 max-w-3xl">
+      <h1 className="text-2xl font-bold text-primary mb-1">Admin Panel</h1>
+      <p className="text-sm text-muted-foreground mb-6">Review and manage all loan applications</p>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { label: "Total", value: total,    color: "text-primary" },
+          { label: "Pending", value: pending,  color: "text-yellow-600" },
+          { label: "Approved", value: approved, color: "text-green-600" },
+        ].map(s => (
+          <Card key={s.label} className="p-4 text-center border border-border">
+            <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        <Card className="p-6 border-l-4 border-l-primary hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-              <CreditCard className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Applications</p>
-              <p className="text-2xl font-bold">{totalLoans}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-6 border-l-4 border-l-warning hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center text-warning-foreground">
-              <Activity className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
-              <p className="text-2xl font-bold">{pendingLoans}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 border-l-4 border-l-success hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center text-success">
-              <DollarSign className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Disbursed</p>
-              <p className="text-2xl font-bold">${totalDisbursed.toLocaleString()}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 border-l-4 border-l-secondary-foreground hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center text-secondary-foreground">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">System Users</p>
-              <p className="text-2xl font-bold">{users?.length || "—"}</p>
-            </div>
-          </div>
-        </Card>
+      {/* Tabs */}
+      <div className="flex border-b border-border mb-5">
+        {(["loans","users"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t === "loans" ? "Loan Applications" : "Users"}
+          </button>
+        ))}
       </div>
 
-      <Card className="border-border/50 shadow-md rounded-2xl overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="px-6 pt-6 border-b border-border/50 bg-muted/20">
-            <TabsList className="bg-background/50 mb-0 pb-0 h-12 gap-6 rounded-none border-b-0">
-              <TabsTrigger value="loans" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-base px-1 h-full bg-transparent">
-                Loan Applications
-              </TabsTrigger>
-              <TabsTrigger value="users" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-base px-1 h-full bg-transparent">
-                User Directory
-              </TabsTrigger>
-            </TabsList>
-          </div>
+      {/* Loans Tab */}
+      {tab === "loans" && (
+        <div className="space-y-3">
+          {loansLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : loans?.length === 0 ? (
+            <p className="text-center text-muted-foreground py-10 text-sm">No applications yet.</p>
+          ) : (
+            loans?.map(loan => (
+              <Card key={loan.id} className="p-4 border border-border">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    <p className="font-semibold">{loan.fullName}</p>
+                    <p className="text-xs text-muted-foreground">{loan.userEmail} · {loan.phoneNumber}</p>
+                  </div>
+                  <StatusBadge status={loan.status} />
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3">
+                  <div><span className="text-muted-foreground text-xs">Amount: </span><span className="font-semibold text-primary">${Number(loan.amount).toLocaleString()}</span></div>
+                  <div><span className="text-muted-foreground text-xs">Duration: </span><span>{loan.duration} months</span></div>
+                  <div><span className="text-muted-foreground text-xs">Country: </span><span>{loan.country}</span></div>
+                  <div><span className="text-muted-foreground text-xs">Income: </span><span>{loan.monthlyIncomeRange}</span></div>
+                  <div><span className="text-muted-foreground text-xs">Applied: </span><span>{fmtDate(loan.createdAt)}</span></div>
+                </div>
+                {loan.status === "pending" && (
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleUpdate(loan.id, "approved")}
+                      disabled={updateMutation.isPending}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                      onClick={() => handleUpdate(loan.id, "rejected")}
+                      disabled={updateMutation.isPending}
+                    >
+                      <XCircle className="w-3.5 h-3.5 mr-1" /> Reject
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            ))
+          )}
+        </div>
+      )}
 
-          <TabsContent value="loans" className="p-0 m-0">
-            <div className="overflow-x-auto">
-              {isLoansLoading ? (
-                <div className="p-12 text-center text-muted-foreground flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin mr-2"/> Loading data...</div>
-              ) : (
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      <TableHead className="w-20">ID</TableHead>
-                      <TableHead>Applicant</TableHead>
-                      <TableHead>Location / Income</TableHead>
-                      <TableHead>Amount & Terms</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loans?.map((loan) => (
-                      <TableRow key={loan.id} className="hover:bg-muted/10">
-                        <TableCell className="font-medium text-muted-foreground">#{loan.id}</TableCell>
-                        <TableCell>
-                          <p className="font-semibold text-foreground">{loan.fullName}</p>
-                          <p className="text-xs text-muted-foreground">{loan.userEmail}</p>
-                          <p className="text-xs text-muted-foreground">{loan.phoneNumber}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p className="font-medium">{loan.country}</p>
-                          <p className="text-xs text-muted-foreground">{loan.monthlyIncomeRange}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p className="font-bold text-primary">${loan.amount.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">{loan.duration} mos @ ${(loan.amount * (1 + 0.02 * loan.duration) / loan.duration).toFixed(0)}/mo</p>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {loan.createdAt ? format(new Date(loan.createdAt), "MMM dd, yyyy") : "N/A"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={
-                            loan.status === 'approved' ? 'bg-success/10 text-success border-success/30' : 
-                            loan.status === 'rejected' ? 'bg-destructive/10 text-destructive border-destructive/30' : 
-                            'bg-warning/10 text-warning-foreground border-warning/30'
-                          }>
-                            {loan.status.toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {loan.status === 'pending' ? (
-                            <div className="flex justify-end gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="border-success text-success hover:bg-success hover:text-white"
-                                onClick={() => handleStatusUpdate(loan.id, 'approved')}
-                                disabled={updateStatusMutation.isPending}
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" /> Approve
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="border-destructive text-destructive hover:bg-destructive hover:text-white"
-                                onClick={() => handleStatusUpdate(loan.id, 'rejected')}
-                                disabled={updateStatusMutation.isPending}
-                              >
-                                <XCircle className="w-4 h-4 mr-1" /> Reject
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Action taken</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {loans?.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          No applications found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="users" className="p-0 m-0">
-            <div className="overflow-x-auto">
-              {isUsersLoading ? (
-                <div className="p-12 text-center text-muted-foreground flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin mr-2"/> Loading data...</div>
-              ) : (
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      <TableHead>User ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Joined</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users?.map((u) => (
-                      <TableRow key={u.id} className="hover:bg-muted/10">
-                        <TableCell className="font-mono text-xs text-muted-foreground">{u.id.substring(0,8)}...</TableCell>
-                        <TableCell className="font-semibold">{u.name || "Unknown"}</TableCell>
-                        <TableCell>{u.email}</TableCell>
-                        <TableCell>
-                          {u.isAdmin ? (
-                            <Badge className="bg-primary/10 text-primary border-primary/20">Admin</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">User</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {u.createdAt ? format(new Date(u.createdAt), "MMM dd, yyyy") : "N/A"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </Card>
+      {/* Users Tab */}
+      {tab === "users" && (
+        <div className="space-y-3">
+          {usersLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+          ) : users?.length === 0 ? (
+            <p className="text-center text-muted-foreground py-10 text-sm">No users yet.</p>
+          ) : (
+            users?.map(u => (
+              <Card key={u.id} className="p-4 border border-border flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{u.name || "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground">{u.email}</p>
+                  <p className="text-xs text-muted-foreground">Joined {fmtDate(u.createdAt)}</p>
+                </div>
+                {u.isAdmin && (
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary">Admin</span>
+                )}
+              </Card>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
