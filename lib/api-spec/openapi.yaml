@@ -1,22 +1,26 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Trust Global Finance API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: loans
+    description: Loan operations
+  - name: admin
+    description: Admin operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +28,167 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+
+  /loans:
+    get:
+      operationId: getUserLoans
+      tags: [loans]
+      summary: Get current user's loans
+      responses:
+        "200":
+          description: List of loans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Loan"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: applyForLoan
+      tags: [loans]
+      summary: Apply for a loan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoanApplication"
+      responses:
+        "201":
+          description: Loan application submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Loan"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/loans:
+    get:
+      operationId: adminGetAllLoans
+      tags: [admin]
+      summary: Admin - get all loan applications
+      responses:
+        "200":
+          description: All loans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminLoan"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/loans/{loanId}:
+    patch:
+      operationId: adminUpdateLoanStatus
+      tags: [admin]
+      summary: Admin - approve or reject a loan
+      parameters:
+        - name: loanId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLoanStatus"
+      responses:
+        "200":
+          description: Loan updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Loan"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/users:
+    get:
+      operationId: adminGetAllUsers
+      tags: [admin]
+      summary: Admin - get all users
+      responses:
+        "200":
+          description: All users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +199,203 @@ components:
       required:
         - status
 
+    GetCurrentAuthUserResponse:
+      type: object
+      properties:
+        isAuthenticated:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/AuthUser"
+      required:
+        - isAuthenticated
+
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        profileImage:
+          type: string
+        isAdmin:
+          type: boolean
+      required:
+        - id
+        - isAdmin
+
+    Loan:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        fullName:
+          type: string
+        country:
+          type: string
+        phoneNumber:
+          type: string
+        monthlyIncomeRange:
+          type: string
+        amount:
+          type: number
+        duration:
+          type: integer
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        repaymentDate:
+          type: string
+        monthlyPayment:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - fullName
+        - country
+        - phoneNumber
+        - monthlyIncomeRange
+        - amount
+        - duration
+        - status
+
+    AdminLoan:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        userName:
+          type: string
+        userEmail:
+          type: string
+        fullName:
+          type: string
+        country:
+          type: string
+        phoneNumber:
+          type: string
+        monthlyIncomeRange:
+          type: string
+        amount:
+          type: number
+        duration:
+          type: integer
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        repaymentDate:
+          type: string
+        monthlyPayment:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - fullName
+        - country
+        - phoneNumber
+        - monthlyIncomeRange
+        - amount
+        - duration
+        - status
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        isAdmin:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - isAdmin
+
+    LoanApplication:
+      type: object
+      properties:
+        fullName:
+          type: string
+        country:
+          type: string
+        phoneNumber:
+          type: string
+        monthlyIncomeRange:
+          type: string
+        amount:
+          type: number
+        duration:
+          type: integer
+      required:
+        - fullName
+        - country
+        - phoneNumber
+        - monthlyIncomeRange
+        - amount
+        - duration
+
+    UpdateLoanStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    ExchangeMobileAuthorizationCodeBody:
+      type: object
+      properties:
+        code:
+          type: string
+        code_verifier:
+          type: string
+        redirect_uri:
+          type: string
+        state:
+          type: string
+        nonce:
+          type: string
+      required:
+        - code
+        - code_verifier
+        - redirect_uri
+        - state
+
+    ExchangeMobileAuthorizationCodeResponse:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    LogoutMobileSessionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success

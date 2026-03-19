@@ -1,0 +1,23 @@
+packages:
+  "framer-motion": "Animations for the landing page hero and page transitions"
+  "@hookform/resolvers": "Zod validation for react-hook-form in loan application"
+  "zod": "Schema validation for forms"
+  "lucide-react": "Icons for the UI"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility function to efficiently merge Tailwind CSS classes"
+
+images:
+  - path: "artifacts/trust-global/public/images/logo.png"
+    description: "A highly professional, minimalist geometric logo mark for a fintech company named Trust Global. Navy blue and vibrant emerald green colors. Solid transparent background."
+    aspect_ratio: "1:1"
+  - path: "artifacts/trust-global/public/images/hero-bg.png"
+    description: "Abstract, premium background for a fintech website. Deep navy blue with subtle glowing digital network nodes and faint, elegant emerald green light leaks conveying global connectivity and trust."
+    aspect_ratio: "16:9"
+  - path: "artifacts/trust-global/public/images/global-reach.png"
+    description: "A beautifully stylized minimal map of the world composed of glowing dots on a dark transparent background, emphasizing international finance."
+    aspect_ratio: "16:9"
+
+notes:
+  - React Query hooks are imported directly from `@workspace/api-client-react`
+  - Replit Auth is used via `@workspace/replit-auth-web`
+  - Ensure all routes are protected appropriately based on the auth state
