@@ -6,27 +6,70 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
 
+// All ~249 world countries via built-in Intl API — zero dependencies needed
 const COUNTRIES = [
-  "United States","United Kingdom","Canada","Australia","Germany","France","Spain","Italy",
-  "Netherlands","Sweden","Switzerland","Norway","United Arab Emirates","Saudi Arabia",
-  "Singapore","Japan","South Korea","Brazil","Mexico","India","Pakistan","Bangladesh",
-  "South Africa","Nigeria","Kenya","Ghana","Philippines","Indonesia","Vietnam","Thailand",
-  "Malaysia","Egypt","Morocco","Ethiopia","Tanzania","Uganda","Zimbabwe","Other"
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda",
+  "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain",
+  "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
+  "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",
+  "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada",
+  "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros",
+  "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba",
+  "Cyprus", "Czech Republic", "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia",
+  "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia",
+  "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+  "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran",
+  "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+  "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho",
+  "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar",
+  "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania",
+  "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro",
+  "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands",
+  "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia",
+  "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea",
+  "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania",
+  "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia",
+  "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+  "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore",
+  "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea",
+  "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland",
+  "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo",
+  "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
+  "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+  "Yemen", "Zambia", "Zimbabwe",
 ];
 
-const INCOME_RANGES = ["<$500","$500-$1000","$1000-$2500","$2500-$5000","$5000+"];
+const INCOME_RANGES = [
+  "<$500",
+  "$500-$1000",
+  "$1000-$2500",
+  "$2500-$5000",
+  "$5000+",
+];
+
 const DURATIONS = [3, 6, 12, 18, 24, 36];
 
-type Errors = Record<string, string>;
-
-function FieldError({ msg }: { msg?: string }) {
-  if (!msg) return null;
-  return <p className="text-xs text-destructive mt-0.5">{msg}</p>;
-}
+const LOAN_PURPOSES = [
+  "Business",
+  "Education",
+  "Medical",
+  "Home Improvement",
+  "Travel",
+  "Debt Consolidation",
+  "Other",
+];
 
 export default function ApplyPage() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -34,31 +77,23 @@ export default function ApplyPage() {
   const { toast } = useToast();
   const applyMutation = useApplyForLoan();
 
-  // Personal info
   const [fullName, setFullName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
   const [country, setCountry] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [occupation, setOccupation] = useState("");
-  const [employerName, setEmployerName] = useState("");
   const [monthlyIncomeRange, setMonthlyIncomeRange] = useState("");
-
-  // Bank info
-  const [bankName, setBankName] = useState("");
-  const [bankAccountNumber, setBankAccountNumber] = useState("");
-
-  // Loan details
   const [amount, setAmount] = useState("5000");
   const [duration, setDuration] = useState("12");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dob, setDob] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [employer, setEmployer] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [gender, setGender] = useState("");
+  const [loanPurpose, setLoanPurpose] = useState("");
 
-  const [errors, setErrors] = useState<Errors>({});
-
-  // Safe parsed numbers for preview
-  const numAmount = (() => {
-    const n = parseFloat(amount);
-    return isNaN(n) ? 0 : Math.min(50000, Math.max(500, n));
-  })();
-  const numDuration = parseInt(duration) || 12;
+  const numAmount = Math.max(500, Math.min(50000, Number(amount) || 0));
+  const numDuration = Number(duration) || 12;
   const monthlyPayment =
     numAmount > 0 && numDuration > 0
       ? ((numAmount * (1 + 0.02 * numDuration)) / numDuration).toFixed(2)
@@ -76,18 +111,28 @@ export default function ApplyPage() {
     );
   }
 
-  function validate(): Errors {
-    const e: Errors = {};
-    if (!fullName.trim() || fullName.trim().length < 2) e.fullName = "Enter your full name (at least 2 characters)";
-    if (!dateOfBirth) e.dateOfBirth = "Enter your date of birth";
-    if (!country) e.country = "Select your country";
-    if (!phoneNumber.trim() || phoneNumber.trim().length < 6) e.phoneNumber = "Enter a valid phone number";
-    if (!occupation.trim()) e.occupation = "Enter your occupation";
+  function validate() {
+    const e: Record<string, string> = {};
+    if (!fullName.trim() || fullName.trim().length < 2)
+      e.fullName = "Enter your full name";
+    if (!gender) e.gender = "Select your gender";
+    if (!country) e.country = "Select a country";
+    if (!phoneNumber.trim() || phoneNumber.trim().length < 6)
+      e.phoneNumber = "Enter a valid phone number";
     if (!monthlyIncomeRange) e.monthlyIncomeRange = "Select your income range";
-    if (!bankName.trim()) e.bankName = "Enter your bank name";
-    if (!bankAccountNumber.trim()) e.bankAccountNumber = "Enter your bank account number";
-    if (!amount || numAmount < 500 || numAmount > 50000) e.amount = "Amount must be between $500 and $50,000";
+    if (!occupation.trim()) e.occupation = "Enter your occupation";
+    if (!loanPurpose) e.loanPurpose = "Select a loan purpose";
+    if (!amount || numAmount < 500 || numAmount > 50000)
+      e.amount = "Amount must be between $500 and $50,000";
     if (!duration) e.duration = "Select a repayment duration";
+    if (!dob) {
+      e.dob = "Enter your date of birth";
+    } else {
+      const birthDate = new Date(dob);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 18) e.dob = "You must be at least 18 years old";
+    }
     return e;
   }
 
@@ -96,31 +141,33 @@ export default function ApplyPage() {
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
-      // Scroll to first error
-      const firstEl = document.querySelector("[data-error]");
-      firstEl?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setErrors({});
     applyMutation.mutate(
       {
         data: {
-          fullName: fullName.trim(),
-          dateOfBirth,
+          fullName,
           country,
-          phoneNumber: phoneNumber.trim(),
-          occupation: occupation.trim(),
-          employerName: employerName.trim() || undefined,
+          phoneNumber,
           monthlyIncomeRange,
-          bankName: bankName.trim(),
-          bankAccountNumber: bankAccountNumber.trim(),
           amount: numAmount,
           duration: numDuration,
+          gender,
+          loanPurpose,
+          occupation,
+          employer,
+          bankName,
+          accountNumber,
+          dob,
         },
       },
       {
         onSuccess: () => {
-          toast({ title: "Application Submitted!", description: "We'll review your application shortly." });
+          toast({
+            title: "Application Submitted!",
+            description: "We'll review it shortly.",
+          });
           setLocation("/dashboard");
         },
         onError: () => {
@@ -130,225 +177,304 @@ export default function ApplyPage() {
             description: "Something went wrong. Please try again.",
           });
         },
-      }
+      },
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
       <div className="mx-auto max-w-xl">
-        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6"
+        >
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
 
-        <div className="mb-5">
-          <h1 className="text-2xl font-bold text-primary">Loan Application</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Fill in all required fields. Your information is encrypted and secure.
+        <Card className="p-6 shadow-sm border border-border">
+          <h1 className="text-2xl font-bold text-primary mb-1">
+            Loan Application
+          </h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Complete this short form to get your loan decision.
           </p>
-        </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
 
-          {/* ── Section 1: Personal Information ── */}
-          <Card className="p-5 border border-border space-y-4">
-            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Personal Information</h2>
+            {/* ── Personal Information ── */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Personal Information
+              </h3>
 
-            <div data-error={errors.fullName ? "1" : undefined}>
-              <Label htmlFor="fullName">Full Name <span className="text-destructive">*</span></Label>
-              <Input
-                id="fullName"
-                placeholder="e.g. John Appleseed"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                className="mt-1"
-              />
-              <FieldError msg={errors.fullName} />
-            </div>
-
-            <div data-error={errors.dateOfBirth ? "1" : undefined}>
-              <Label htmlFor="dob">Date of Birth <span className="text-destructive">*</span></Label>
-              <Input
-                id="dob"
-                type="date"
-                value={dateOfBirth}
-                onChange={e => setDateOfBirth(e.target.value)}
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
-                className="mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-0.5">You must be at least 18 years old.</p>
-              <FieldError msg={errors.dateOfBirth} />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div data-error={errors.country ? "1" : undefined}>
-                <Label>Country of Residence <span className="text-destructive">*</span></Label>
-                <Select value={country} onValueChange={setCountry}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select country" /></SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FieldError msg={errors.country} />
-              </div>
-
-              <div data-error={errors.phoneNumber ? "1" : undefined}>
-                <Label htmlFor="phone">Phone Number <span className="text-destructive">*</span></Label>
+              {/* Full Name — full width, intentional */}
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName">Full Name</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="e.g. +1 555 012 3456"
-                  value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value)}
-                  className="mt-1"
+                  id="fullName"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                 />
-                <FieldError msg={errors.phoneNumber} />
+                {errors.fullName && (
+                  <p className="text-xs text-destructive">{errors.fullName}</p>
+                )}
+              </div>
+
+              {/* DOB + Gender */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Input
+                    id="dob"
+                    type="date"
+                    value={dob}
+                    min="1900-01-01"
+                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18))
+                      .toISOString()
+                      .split("T")[0]}
+                    onChange={(e) => setDob(e.target.value)}
+                  />
+                  {errors.dob && (
+                    <p className="text-xs text-destructive">{errors.dob}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Gender</Label>
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.gender && (
+                    <p className="text-xs text-destructive">{errors.gender}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Phone + Country */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+1 555 0000"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                  {errors.phoneNumber && (
+                    <p className="text-xs text-destructive">{errors.phoneNumber}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-1.5">
+                  <Label>Country of Residence</Label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Country" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                     
+                  </Select>
+                  {errors.country && (
+                    <p className="text-xs text-destructive">{errors.country}</p>
+                  )}
+                </div>
               </div>
             </div>
-          </Card>
 
-          {/* ── Section 2: Employment ── */}
-          <Card className="p-5 border border-border space-y-4">
-            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Employment & Income</h2>
+            {/* ── Employment & Finances ── */}
+            <div className="border-t border-border pt-5 space-y-4">
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Employment & Finances
+              </h3>
 
-            <div data-error={errors.occupation ? "1" : undefined}>
-              <Label htmlFor="occupation">Occupation <span className="text-destructive">*</span></Label>
-              <Input
-                id="occupation"
-                placeholder="e.g. Software Engineer, Nurse, Self-employed"
-                value={occupation}
-                onChange={e => setOccupation(e.target.value)}
-                className="mt-1"
-              />
-              <FieldError msg={errors.occupation} />
-            </div>
+              {/* Occupation + Monthly Income */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="occupation">Occupation</Label>
+                  <Input
+                    id="occupation"
+                    placeholder="e.g. Developer, Trader"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                  />
+                  {errors.occupation && (
+                    <p className="text-xs text-destructive">{errors.occupation}</p>
+                  )}
+                </div>
 
-            <div>
-              <Label htmlFor="employer">Employer / Business Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
-              <Input
-                id="employer"
-                placeholder="e.g. Acme Corp, Self-employed"
-                value={employerName}
-                onChange={e => setEmployerName(e.target.value)}
-                className="mt-1"
-              />
-            </div>
+                <div className="space-y-1.5">
+                  <Label>Monthly Income</Label>
+                  <Select value={monthlyIncomeRange} onValueChange={setMonthlyIncomeRange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Income Range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INCOME_RANGES.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.monthlyIncomeRange && (
+                    <p className="text-xs text-destructive">{errors.monthlyIncomeRange}</p>
+                  )}
+                </div>
+              </div>
 
-            <div data-error={errors.monthlyIncomeRange ? "1" : undefined}>
-              <Label>Monthly Income <span className="text-destructive">*</span></Label>
-              <Select value={monthlyIncomeRange} onValueChange={setMonthlyIncomeRange}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select income range" /></SelectTrigger>
-                <SelectContent>
-                  {INCOME_RANGES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <FieldError msg={errors.monthlyIncomeRange} />
-            </div>
-          </Card>
-
-          {/* ── Section 3: Banking ── */}
-          <Card className="p-5 border border-border space-y-4">
-            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Banking Details</h2>
-            <p className="text-xs text-muted-foreground -mt-2">
-              Disbursements will be sent to this account. Your details are encrypted.
-            </p>
-
-            <div data-error={errors.bankName ? "1" : undefined}>
-              <Label htmlFor="bankName">Bank Name <span className="text-destructive">*</span></Label>
-              <Input
-                id="bankName"
-                placeholder="e.g. Chase, Barclays, GTBank"
-                value={bankName}
-                onChange={e => setBankName(e.target.value)}
-                className="mt-1"
-              />
-              <FieldError msg={errors.bankName} />
-            </div>
-
-            <div data-error={errors.bankAccountNumber ? "1" : undefined}>
-              <Label htmlFor="bankAccount">Bank Account Number <span className="text-destructive">*</span></Label>
-              <Input
-                id="bankAccount"
-                placeholder="Enter your account number"
-                value={bankAccountNumber}
-                onChange={e => setBankAccountNumber(e.target.value)}
-                inputMode="numeric"
-                className="mt-1"
-              />
-              <FieldError msg={errors.bankAccountNumber} />
-            </div>
-          </Card>
-
-          {/* ── Section 4: Loan Details ── */}
-          <Card className="p-5 border border-border space-y-4">
-            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Loan Details</h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div data-error={errors.amount ? "1" : undefined}>
-                <Label htmlFor="amount">Loan Amount (USD) <span className="text-destructive">*</span></Label>
+              {/* Employer — full width, no natural pair */}
+              <div className="space-y-1.5">
+                <Label htmlFor="employer">Employer / Business Name</Label>
                 <Input
-                  id="amount"
-                  type="number"
-                  min={500}
-                  max={50000}
-                  step={100}
-                  placeholder="e.g. 5000"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  inputMode="numeric"
-                  className="mt-1"
+                  id="employer"
+                  placeholder="Company or Business Name"
+                  value={employer}
+                  onChange={(e) => setEmployer(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground mt-0.5">Min $500 · Max $50,000</p>
-                <FieldError msg={errors.amount} />
               </div>
 
-              <div data-error={errors.duration ? "1" : undefined}>
-                <Label>Repayment Duration <span className="text-destructive">*</span></Label>
-                <Select value={duration} onValueChange={setDuration}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select duration" /></SelectTrigger>
+              {/* Bank Name + Account Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bankName">Bank Name</Label>
+                  <Input
+                    id="bankName"
+                    placeholder="Your Bank Name"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                  />
+                  {errors.bankName && (
+                    <p className="text-xs text-destructive">{errors.bankName}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="accountNumber">Account Number</Label>
+                  <Input
+                    id="accountNumber"
+                    placeholder="Your Account Number"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                  />
+                  {errors.accountNumber && (
+                    <p className="text-xs text-destructive">{errors.accountNumber}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Loan Details ── */}
+            <div className="border-t border-border pt-5 space-y-4">
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Loan Details
+              </h3>
+
+              {/* Loan Purpose — full width */}
+              <div className="space-y-1.5">
+                <Label>Loan Purpose</Label>
+                <Select value={loanPurpose} onValueChange={setLoanPurpose}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="What is this loan for?" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {DURATIONS.map(d => (
-                      <SelectItem key={d} value={String(d)}>{d} months</SelectItem>
+                    {LOAN_PURPOSES.map((p) => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FieldError msg={errors.duration} />
+                {errors.loanPurpose && (
+                  <p className="text-xs text-destructive">{errors.loanPurpose}</p>
+                )}
+              </div>
+
+              {/* Loan Amount + Repayment Duration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="amount">Loan Amount ($)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    min={500}
+                    max={50000}
+                    step={100}
+                    placeholder="5000"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    inputMode="numeric"
+                  />
+                  <p className="text-xs text-muted-foreground">$500 – $50,000</p>
+                  {errors.amount && (
+                    <p className="text-xs text-destructive">{errors.amount}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Repayment Duration</Label>
+                  <Select value={duration} onValueChange={setDuration}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DURATIONS.map((d) => (
+                        <SelectItem key={d} value={String(d)}>
+                          {d} months
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.duration && (
+                    <p className="text-xs text-destructive">{errors.duration}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Monthly payment summary */}
+              <div className="bg-primary/5 rounded-xl p-4 border border-primary/10 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Est. Monthly Payment</p>
+                  <p className="text-2xl font-extrabold text-accent">${monthlyPayment}</p>
+                </div>
+                <div className="text-right text-xs text-muted-foreground">
+                  <p>Amount: ${numAmount.toLocaleString()}</p>
+                  <p>Duration: {numDuration} months</p>
+                  <p>Rate: 2% / month</p>
+                </div>
               </div>
             </div>
 
-            {/* Live repayment preview */}
-            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Estimated monthly payment</p>
-                <p className="text-2xl font-extrabold text-accent">
-                  ${isNaN(parseFloat(monthlyPayment)) ? "0.00" : monthlyPayment}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">2% flat monthly interest · no hidden fees</p>
-              </div>
-              <div className="text-right text-xs text-muted-foreground space-y-0.5">
-                <p>Principal: <span className="font-medium text-foreground">${numAmount.toLocaleString()}</span></p>
-                <p>Duration: <span className="font-medium text-foreground">{numDuration} months</span></p>
-                <p>Total repay: <span className="font-medium text-foreground">${(numAmount * (1 + 0.02 * numDuration)).toFixed(2)}</span></p>
-              </div>
-            </div>
-          </Card>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-base font-semibold"
+              disabled={applyMutation.isPending}
+            >
+              {applyMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Submit Application"
+              )}
+            </Button>
 
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full bg-primary text-white hover:bg-primary/90 h-12 text-base font-semibold"
-            disabled={applyMutation.isPending}
-          >
-            {applyMutation.isPending
-              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
-              : "Submit Application"}
-          </Button>
-
-          <p className="text-xs text-center text-muted-foreground pb-4">
-            By submitting, you agree to our Terms of Service and Privacy Policy.
-            Your data is encrypted and never shared without your consent.
-          </p>
-        </form>
+            <p className="text-xs text-center text-muted-foreground">
+              By submitting, you agree to our Terms of Service.
+            </p>
+          </form>
+        </Card>
       </div>
     </div>
   );

@@ -17,7 +17,7 @@ export function Navbar() {
             <ShieldCheck className="w-5 h-5 text-accent" />
           </div>
           <span className="font-bold text-lg text-primary">
-            Trust<span className="text-accent">Global</span>
+            Trust<span className="text-accent"> Global</span> Finance
           </span>
         </Link>
 

@@ -7,7 +7,7 @@ export function Footer() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <ShieldCheck className="w-5 h-5 text-accent" />
-            <span className="font-bold text-lg">Trust<span className="text-accent">Global</span></span>
+            <span className="font-bold text-lg">Trust<span className="text-accent"> Global</span></span> Finance
           </div>
           <p className="text-primary-foreground/60 text-sm max-w-xs">Fast, secure cross-border loans wherever you are.</p>
         </div>
