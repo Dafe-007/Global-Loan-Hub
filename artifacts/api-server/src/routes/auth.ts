@@ -1,6 +1,6 @@
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { GetCurrentAuthUserResponse } from "@workspace/api-zod";
+import { GetCurrentanyResponse } from "@workspace/api-zod";
 import { z } from "zod/v4";
 import { db, usersTable } from "@workspace/db";
 import {
@@ -86,7 +86,7 @@ async function upsertUser(claims: Record<string, unknown>) {
 router.get("/auth/user", (req: Request, res: Response) => {
   const isAuthenticated = req.isAuthenticated();
   res.json(
-    GetCurrentAuthUserResponse.parse({
+    GetCurrentany.parse({
       isAuthenticated,
       user: isAuthenticated ? req.user : undefined,
     }),

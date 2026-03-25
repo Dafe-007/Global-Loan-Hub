@@ -9,7 +9,7 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface AuthUser {
+export interface any {
   id: string;
   name?: string;
   email?: string;
@@ -17,9 +17,9 @@ export interface AuthUser {
   isAdmin: boolean;
 }
 
-export interface GetCurrentAuthUserResponse {
+export interface GetCurrentanyResponse {
   isAuthenticated: boolean;
-  user?: AuthUser;
+  user?: any;
 }
 
 export type LoanStatus = (typeof LoanStatus)[keyof typeof LoanStatus];

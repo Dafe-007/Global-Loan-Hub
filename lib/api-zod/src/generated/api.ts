@@ -17,7 +17,7 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Get current authenticated user
  */
-export const GetCurrentAuthUserResponse = zod.object({
+export const GetCurrentanyResponse = zod.object({
   isAuthenticated: zod.boolean(),
   user: zod
     .object({

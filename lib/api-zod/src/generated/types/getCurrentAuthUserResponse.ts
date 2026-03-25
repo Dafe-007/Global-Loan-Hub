@@ -5,9 +5,8 @@
  * Trust Global Finance API
  * OpenAPI spec version: 0.1.0
  */
-import type { AuthUser } from "./authUser";
 
-export interface GetCurrentAuthUserResponse {
+export interface GetCurrentanyResponse {
   isAuthenticated: boolean;
-  user?: AuthUser;
+  user?: any;
 }

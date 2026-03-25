@@ -20,7 +20,7 @@ import type {
   AdminLoan,
   AdminUser,
   ErrorResponse,
-  GetCurrentAuthUserResponse,
+  GetCurrentanyResponse,
   HealthStatus,
   Loan,
   LoanApplication,
@@ -114,29 +114,29 @@ export function useHealthCheck<
 /**
  * @summary Get current authenticated user
  */
-export const getGetCurrentAuthUserUrl = () => {
+export const getGetCurrentanyUrl = () => {
   return `/api/auth/user`;
 };
 
-export const getCurrentAuthUser = async (
+export const getCurrentany = async (
   options?: RequestInit,
-): Promise<GetCurrentAuthUserResponse> => {
-  return customFetch<GetCurrentAuthUserResponse>(getGetCurrentAuthUserUrl(), {
+): Promise<GetCurrentanyResponse> => {
+  return customFetch<GetCurrentanyResponse>(getGetCurrentanyUrl(), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetCurrentAuthUserQueryKey = () => {
+export const getGetCurrentanyQueryKey = () => {
   return [`/api/auth/user`] as const;
 };
 
-export const getGetCurrentAuthUserQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCurrentAuthUser>>,
+export const getGetCurrentanyQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCurrentany>>,
   TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getCurrentAuthUser>>,
+    Awaited<ReturnType<typeof getCurrentany>>,
     TError,
     TData
   >;
@@ -144,40 +144,40 @@ export const getGetCurrentAuthUserQueryOptions = <
 }) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetCurrentAuthUserQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getGetCurrentanyQueryKey();
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getCurrentAuthUser>>
-  > = ({ signal }) => getCurrentAuthUser({ signal, ...requestOptions });
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentany>>> = ({
+    signal,
+  }) => getCurrentany >> { signal, ...requestOptions };
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getCurrentAuthUser>>,
+    Awaited<ReturnType<typeof getCurrentany>>,
     TError,
     TData
   > & { queryKey: QueryKey };
 };
 
-export type GetCurrentAuthUserQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getCurrentAuthUser>>
+export type GetCurrentanyQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCurrentany>>
 >;
-export type GetCurrentAuthUserQueryError = ErrorType<unknown>;
+export type GetCurrentanyQueryError = ErrorType<unknown>;
 
 /**
  * @summary Get current authenticated user
  */
 
-export function useGetCurrentAuthUser<
-  TData = Awaited<ReturnType<typeof getCurrentAuthUser>>,
+export function useGetCurrentany<
+  TData = Awaited<ReturnType<typeof getCurrentany>>,
   TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getCurrentAuthUser>>,
+    Awaited<ReturnType<typeof getCurrentany>>,
     TError,
     TData
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetCurrentAuthUserQueryOptions(options);
+  const queryOptions = getGetCurrentanyQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

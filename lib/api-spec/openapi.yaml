@@ -31,7 +31,7 @@ paths:
 
   /auth/user:
     get:
-      operationId: getCurrentAuthUser
+      operationId: getCurrentany
       tags: [auth]
       summary: Get current authenticated user
       responses:
@@ -40,7 +40,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetCurrentAuthUserResponse"
+                $ref: "#/components/schemas/GetCurrentanyResponse"
 
   /loans:
     get:
@@ -199,17 +199,17 @@ components:
       required:
         - status
 
-    GetCurrentAuthUserResponse:
+    GetCurrentanyResponse:
       type: object
       properties:
         isAuthenticated:
           type: boolean
         user:
-          $ref: "#/components/schemas/AuthUser"
+          $ref: "#/components/schemas/anyUser"
       required:
         - isAuthenticated
 
-    AuthUser:
+    any:
       type: object
       properties:
         id:

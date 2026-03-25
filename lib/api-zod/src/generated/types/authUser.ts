@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AuthUser {
+export interface any {
   id: string;
   name?: string;
   email?: string;

@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import type { AuthUser } from "@workspace/api-client-react";
-
-export type { AuthUser };
 
 interface AuthState {
-  user: AuthUser | null;
+  user: any | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: () => void;
@@ -12,7 +9,7 @@ interface AuthState {
 }
 
 export function useAuth(): AuthState {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +18,7 @@ export function useAuth(): AuthState {
     fetch("/api/auth/user", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{ user: AuthUser | null }>;
+        return res.json() as Promise<{ user: any | null }>;
       })
       .then((data) => {
         if (!cancelled) {
