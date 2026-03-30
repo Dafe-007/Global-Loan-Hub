@@ -1,6 +1,15 @@
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { GetCurrentAuthUserResponse } from "@workspace/api-zod";
+// Remove line 3 entirely - delete the GetCurrentAuthUserResponse import
+
+// Then change the route to:
+router.get("/auth/user", (req: any, res: Response) => {
+  const isAuthenticated = req.isAuthenticated();
+  res.json({
+    isAuthenticated,
+    user: isAuthenticated ? req.user : undefined,
+  });
+});
 import { z } from "zod/v4";
 import { db, usersTable } from "@workspace/db";
 import {
