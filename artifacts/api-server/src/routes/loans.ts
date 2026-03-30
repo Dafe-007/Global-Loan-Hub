@@ -27,7 +27,10 @@ const INCOME_THRESHOLDS: Record<string, number> = {
   "$5000+": 999999,
 };
 
-function autoDecide(monthlyIncomeRange: string, amount: number): "approved" | "pending" {
+function autoDecide(
+  monthlyIncomeRange: string,
+  amount: number,
+): "approved" | "pending" {
   const incomeMin = INCOME_THRESHOLDS[monthlyIncomeRange] ?? 0;
   if (incomeMin >= 1000 && amount <= 10000) return "approved";
   if (incomeMin >= 2500 && amount <= 25000) return "approved";
@@ -45,7 +48,7 @@ function calcMonthlyPayment(amount: number, duration: number): number {
   return parseFloat(((amount * (1 + 0.02 * duration)) / duration).toFixed(2));
 }
 
-router.get("/loans", async (req, res) => {
+router.get("/loans", async (req: any, res: any) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -57,44 +60,54 @@ router.get("/loans", async (req, res) => {
   res.json(loans);
 });
 
-router.post("/loans", async (req, res) => {
+router.post("/loans", async (req: any, res: any) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
   const parsed = loanApplicationSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input", details: parsed.error.issues });
+    res
+      .status(400)
+      .json({ error: "Invalid input", details: parsed.error.issues });
     return;
   }
   const {
-    fullName, country, phoneNumber, monthlyIncomeRange,
-    dateOfBirth, occupation, employerName, bankName, bankAccountNumber,
-    amount, duration,
-  } = parsed.data;
-
-  const status = autoDecide(monthlyIncomeRange, amount);
-  const repaymentDate = calcRepaymentDate(duration);
-  const monthlyPayment = calcMonthlyPayment(amount, duration);
-
-  const [loan] = await db.insert(loansTable).values({
-    userId: req.user.id,
     fullName,
     country,
     phoneNumber,
     monthlyIncomeRange,
-    dateOfBirth: dateOfBirth ?? null,
-    occupation: occupation ?? null,
-    employerName: employerName ?? null,
-    bankName: bankName ?? null,
-    bankAccountNumber: bankAccountNumber ?? null,
-    amount: amount.toString(),
+    dateOfBirth,
+    occupation,
+    employerName,
+    bankName,
+    bankAccountNumber,
+    amount,
     duration,
-    status,
-    repaymentDate,
-    monthlyPayment: monthlyPayment.toString(),
-  }).returning();
-
+  } = parsed.data;
+  const status = autoDecide(monthlyIncomeRange, amount);
+  const repaymentDate = calcRepaymentDate(duration);
+  const monthlyPayment = calcMonthlyPayment(amount, duration);
+  const [loan] = await db
+    .insert(loansTable)
+    .values({
+      userId: req.user.id,
+      fullName,
+      country,
+      phoneNumber,
+      monthlyIncomeRange,
+      dateOfBirth: dateOfBirth ?? null,
+      occupation: occupation ?? null,
+      employerName: employerName ?? null,
+      bankName: bankName ?? null,
+      bankAccountNumber: bankAccountNumber ?? null,
+      amount: amount.toString(),
+      duration,
+      status,
+      repaymentDate,
+      monthlyPayment: monthlyPayment.toString(),
+    })
+    .returning();
   res.status(201).json(loan);
 });
 
