@@ -1,15 +1,5 @@
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
-// Remove line 3 entirely - delete the GetCurrentAuthUserResponse import
-
-// Then change the route to:
-router.get("/auth/user", (req: any, res: Response) => {
-  const isAuthenticated = req.isAuthenticated();
-  res.json({
-    isAuthenticated,
-    user: isAuthenticated ? req.user : undefined,
-  });
-});
 import { z } from "zod/v4";
 import { db, usersTable } from "@workspace/db";
 import {
@@ -25,7 +15,6 @@ import {
 } from "../lib/auth";
 
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
-
 const router: IRouter = Router();
 
 function getOrigin(req: Request): string {
@@ -56,7 +45,11 @@ function setOidcCookie(res: Response, name: string, value: string) {
 }
 
 function getSafeReturnTo(value: unknown): string {
-  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
+  if (
+    typeof value !== "string" ||
+    !value.startsWith("/") ||
+    value.startsWith("//")
+  ) {
     return "/";
   }
   return value;
@@ -65,7 +58,10 @@ function getSafeReturnTo(value: unknown): string {
 async function upsertUser(claims: Record<string, unknown>) {
   const firstName = (claims.first_name as string) || null;
   const lastName = (claims.last_name as string) || null;
-  const fullName = [firstName, lastName].filter(Boolean).join(" ") || (claims.name as string) || null;
+  const fullName =
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    (claims.name as string) ||
+    null;
 
   const userData = {
     id: claims.sub as string,
@@ -94,20 +90,16 @@ async function upsertUser(claims: Record<string, unknown>) {
 
 router.get("/auth/user", (req: any, res: Response) => {
   const isAuthenticated = req.isAuthenticated();
-  res.json(
-    GetCurrentAuthUserResponse.parse({
-      isAuthenticated,
-      user: isAuthenticated ? req.user : undefined,
-    }),
-  );
+  res.json({
+    isAuthenticated,
+    user: isAuthenticated ? req.user : undefined,
+  });
 });
 
 router.get("/login", async (req: Request, res: Response) => {
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
-
   const returnTo = getSafeReturnTo(req.query.returnTo);
-
   const state = oidc.randomState();
   const nonce = oidc.randomNonce();
   const codeVerifier = oidc.randomPKCECodeVerifier();
@@ -127,16 +119,12 @@ router.get("/login", async (req: Request, res: Response) => {
   setOidcCookie(res, "nonce", nonce);
   setOidcCookie(res, "state", state);
   setOidcCookie(res, "return_to", returnTo);
-
   res.redirect(redirectTo.href);
 });
 
-// Query params are not validated because the OIDC provider may include
-// parameters not expressed in the schema.
 router.get("/callback", async (req: Request, res: Response) => {
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
-
   const codeVerifier = req.cookies?.code_verifier;
   const nonce = req.cookies?.nonce;
   const expectedState = req.cookies?.state;
@@ -164,7 +152,6 @@ router.get("/callback", async (req: Request, res: Response) => {
   }
 
   const returnTo = getSafeReturnTo(req.cookies?.return_to);
-
   res.clearCookie("code_verifier", { path: "/" });
   res.clearCookie("nonce", { path: "/" });
   res.clearCookie("state", { path: "/" });
@@ -176,10 +163,7 @@ router.get("/callback", async (req: Request, res: Response) => {
     return;
   }
 
-  const dbUser = await upsertUser(
-    claims as unknown as Record<string, unknown>,
-  );
-
+  const dbUser = await upsertUser(claims as unknown as Record<string, unknown>);
   const now = Math.floor(Date.now() / 1000);
   const sessionData: SessionData = {
     user: {
@@ -202,7 +186,6 @@ router.get("/callback", async (req: Request, res: Response) => {
 router.get("/logout", async (req: Request, res: Response) => {
   const config = await getOidcConfig();
   const origin = getOrigin(req);
-
   const sid = getSessionId(req);
   await clearSession(res, sid);
 
@@ -210,20 +193,22 @@ router.get("/logout", async (req: Request, res: Response) => {
     client_id: process.env.REPL_ID!,
     post_logout_redirect_uri: origin,
   });
-
   res.redirect(endSessionUrl.href);
 });
 
 router.post(
   "/mobile-auth/token-exchange",
   async (req: Request, res: Response) => {
-    const parsed = z.object({
-      code: z.string(),
-      code_verifier: z.string(),
-      redirect_uri: z.string(),
-      state: z.string(),
-      nonce: z.string().optional(),
-    }).safeParse(req.body);
+    const parsed = z
+      .object({
+        code: z.string(),
+        code_verifier: z.string(),
+        redirect_uri: z.string(),
+        state: z.string(),
+        nonce: z.string().optional(),
+      })
+      .safeParse(req.body);
+
     if (!parsed.success) {
       res.status(400).json({ error: "Missing or invalid required parameters" });
       return;
@@ -233,7 +218,6 @@ router.post(
 
     try {
       const config = await getOidcConfig();
-
       const callbackUrl = new URL(redirect_uri);
       callbackUrl.searchParams.set("code", code);
       callbackUrl.searchParams.set("state", state);
@@ -255,7 +239,6 @@ router.post(
       const dbUser = await upsertUser(
         claims as unknown as Record<string, unknown>,
       );
-
       const now = Math.floor(Date.now() / 1000);
       const sessionData: SessionData = {
         user: {
